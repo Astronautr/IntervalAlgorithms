@@ -1,9 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="Global Optimization (New library):jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/Global_Optimization__New_library__jar</output-path>
-    <root id="archive" name="Global Optimization (New library).jar">
-      <element id="module-output" name="Global Optimization (New library)" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/../../../libs/p1788-launcher-java-0.1-SNAPSHOT-jar-with-dependencies.jar" path-in-jar="/" />
-    </root>
-  </artifact>
-</component>
