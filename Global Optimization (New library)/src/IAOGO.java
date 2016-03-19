@@ -27,7 +27,8 @@ public class IAOGO {
                 max = first[i].doubleWid();
                 j = i;
             }
-        //now we bisect each clone by the widest component, first - from lower boundary to middle, second - from middle to upper boundary        first[j] = ic.numsToInterval(first[j].doubleInf(),first[j].doubleMid());
+        //now we bisect each clone by the widest component, first - from lower boundary to middle, second - from middle to upper boundary        
+        first[j] = ic.numsToInterval(first[j].doubleInf(),first[j].doubleMid());
         second[j] = ic.numsToInterval(second[j].doubleMid(),second[j].doubleSup());
         //here we create two elements of list with corresponding ranges of objective function and mins
         ListElem firstel = new ListElem(first, objectiveFunction(first).doubleInf());
