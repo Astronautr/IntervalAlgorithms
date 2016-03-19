@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="JInterval_all_include">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../../../libs/JInterval_all_include.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
