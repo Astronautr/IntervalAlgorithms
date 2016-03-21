@@ -8,11 +8,22 @@ public class IAOGO {
     PriorityQueue<ListElem> wList = new PriorityQueue<ListElem>(new AssessmentComp()); //is used for storage objects of ListElem
     private SetIntervalContext ic;
 
+    private SetInterval c_1, c_2;
+    
+    private void initConstants(SetIntervalContext ic) {
+        this.ic = ic;
+        c_1 = ic.numsToInterval(1, 1);
+        c_2 = ic.numsToInterval(2, 2);
+    }
+    
     public SetInterval objectiveFunction(SetInterval[] origin) { // origin = [a b theta]
         // returning value is a^2 + (b+1)^2 - 2*a * (b+1) * sin(theta)
         //if you want to find max of function - just use ic.neg() to whole expression, and take off minus from result
-        return ic.sub(ic.add(ic.sqr(origin[0]),ic.sqr(ic.add(origin[1],ic.numsToInterval(1,1)))),
-                ic.mul(ic.numsToInterval(2,2),ic.mul(ic.mul(origin[0], ic.add(ic.numsToInterval(1,1),origin[1])),ic.sin(origin[2]))));
+        SetInterval a = origin[0];
+        SetInterval b = origin[1];
+        SetInterval theta = origin[2];
+        return ic.sub(ic.add(ic.sqr(a), ic.sqr(ic.add(b, c_1))),
+                ic.mul(ic.mul(ic.mul(c_2, a), ic.add(b, c_1)), ic.sin(theta)));
     }
 
     public void IntFunc() {
@@ -41,7 +52,7 @@ public class IAOGO {
     }
 
     public void start(SetInterval[] box, double tolerance, SetIntervalContext ic) {
-        this.ic = ic; //define the SetIntervalContext for following computing
+        initConstants(ic); //define the SetIntervalContext for following computing
         SetInterval intArea = objectiveFunction(box); //now we have defined range of objective function
         double intwid = intArea.doubleWid(); //width of range will be used for stopping criterion
         ListElem wrk = new ListElem(box,intArea.doubleInf());
