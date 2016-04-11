@@ -110,6 +110,23 @@ public class GradientMV {
         return result;
     }
 
+    public static GradientMV nums(ExtendedRational inf, ExtendedRational sup) {
+        GradientMV result = new GradientMV();
+        result.xCentral = ic.numsToInterval(inf,sup);
+        result.dxCentral = new SetInterval[dim];
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        for (SetInterval[] row: result.ddX) {
+            Arrays.fill(row, ZERO);
+        }
+        for (int i = 0; i < dim; i++) {
+            result.dX[i] = ZERO;
+            result.dxCentral[i] = ZERO;
+        }
+        result.X = SetIntervalContexts.getExact().numsToInterval(inf,sup);
+        return result;
+    }
+
     public GradientMV neg() {
         GradientMV result = new GradientMV();
         result.xCentral = ic.neg(this.xCentral);
@@ -201,6 +218,27 @@ public class GradientMV {
                         ic.div(
                                 ic.add(ic.add(ic.mul(this.dX[i],Y.dX[j]),ic.mul(this.dX[j],Y.dX[i])),ic.mul(this.X,Y.ddX[i][j])),ic.sqr(Y.X))),
                         ic.mul(ic.numsToInterval(2,2),ic.div(ic.mul(this.X,ic.mul(Y.dX[i],Y.dX[j])),ic.pown(Y.X,3))));
+            }
+        }
+        result.hessianFill();
+        result.improving();
+        return result;
+    }
+
+    public GradientMV recip() {
+        GradientMV result = new GradientMV();
+        result.xCentral = ic.recip(this.xCentral);
+        result.dxCentral = new SetInterval[dim];
+        result.X = ic.recip(this.X);
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        for (int i = 0; i < dim; i++) {
+            result.dX[i] = ic.neg(ic.div(this.dX[i],ic.sqr(this.X)));
+            result.dxCentral[i] = ic.neg(ic.div(this.dxCentral[i],ic.sqr(xCentral)));
+            for (int j = i; j < dim; j++) {
+                result.ddX[i][j] =ic.sub(
+                    ic.mul(ic.numsToInterval(2,2),ic.div(ic.mul(this.dX[i],this.dX[j]),ic.pown(this.X,3))),
+                    ic.div(this.ddX[i][j],ic.sqr(this.X)));
             }
         }
         result.hessianFill();
@@ -362,6 +400,28 @@ public class GradientMV {
                 result.ddX[i][j] = ic.div(ic.sub(ic.mul(this.ddX[i][j],ic.add(ic.numsToInterval(1,1),ic.sqr(this.X))),
                         ic.mul(ic.mul(ic.mul(ic.numsToInterval(2,2),this.X),this.dX[i]),this.dX[j])),
                         ic.sqr(ic.add(ic.numsToInterval(1,1),ic.sqr(this.X))));
+            }
+        }
+        result.hessianFill();
+        result.improving();
+        return result;
+    }
+
+    public GradientMV rootn(int q) {
+        GradientMV result = new GradientMV();
+        SetInterval Y = ic.recip(ic.numsToInterval(q,q));
+        result.xCentral = ic.pow(this.xCentral, Y);
+        result.dxCentral = new SetInterval[dim];
+        result.X = ic.pow(this.X, Y);
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        for (int i = 0; i < dim; i++) {
+            result.dX[i] = ic.mul(ic.mul(Y, ic.pow(X,ic.sub(Y, ic.numsToInterval(1,1)))),this.dX[i]);
+            result.dxCentral[i] = ic.mul(ic.mul(Y, ic.pow(xCentral,ic.sub(Y, ic.numsToInterval(1,1)))),dxCentral[i]);
+            for (int j = i; j < dim; j++) {
+                result.ddX[i][j] = ic.mul(ic.mul(Y,ic.pow(this.X,ic.sub(Y,ic.numsToInterval(2,2)))),
+                        ic.add(ic.mul(ic.mul(ic.sub(Y,ic.numsToInterval(1,1)),this.dX[i]),this.dX[j]),
+                                ic.mul(this.X,this.ddX[i][j])));
             }
         }
         result.hessianFill();

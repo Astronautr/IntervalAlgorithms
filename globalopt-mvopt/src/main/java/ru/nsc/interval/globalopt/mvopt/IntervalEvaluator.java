@@ -3,8 +3,7 @@ package ru.nsc.interval.globalopt.mvopt;
 import net.java.jinterval.expression.*;
 import net.java.jinterval.interval.set.SetInterval;
 import net.java.jinterval.interval.set.SetIntervalContext;
-import net.java.jinterval.interval.set.SetIntervalContexts;
-import net.java.jinterval.rational.ExtendedRational;
+import net.java.jinterval.rational.Rational;
 
 public class IntervalEvaluator {
     public static SetInterval[] evaluateSetInterval(SetIntervalContext ic, CodeList cl, SetInterval[] args, Expression... results) {
@@ -26,8 +25,8 @@ public class IntervalEvaluator {
         if (args.length != cl.getNumInps()) {
             throw new IllegalArgumentException();
         }
-        GradientEvaluator ev = new GradientEvaluator(cl);
-        ev.setContext(ic);
+        GradientEvaluator ev = new GradientEvaluator(cl, ic);
+//        ev.setContext(ic);
         System.arraycopy(args, 0, ev.values, 0, cl.getNumInps());
         cl.acceptForward(ev);
         Gradient[] ret = new Gradient[results.length];
@@ -41,8 +40,8 @@ public class IntervalEvaluator {
         if (args.length != cl.getNumInps()) {
             throw new IllegalArgumentException();
         }
-        GradientMVEvaluator ev = new GradientMVEvaluator(cl);
-        ev.setContext(ic);
+        GradientMVEvaluator ev = new GradientMVEvaluator(cl, ic);
+//        ev.setContext(ic);
         System.arraycopy(args, 0, ev.values, 0, cl.getNumInps());
         cl.acceptForward(ev);
         GradientMV[] ret = new GradientMV[results.length];
@@ -65,17 +64,18 @@ public class IntervalEvaluator {
 
         @Override
         public void visitNum(int r, Number num) {
-            values[r] = SetIntervalContexts.getExact().numsToInterval(num.doubleValue(),num.doubleValue());
+            Rational rv = Rational.valueOf(num);
+            values[r] = ic.numsToInterval(rv, rv);
         }
 
         @Override
         public void visitPi(int r) {
-            values[r] = SetIntervalContexts.getExact().numsToInterval(Math.PI,Math.PI);
+            values[r] = ic.pi();
         }
 
         @Override
         public void visitEuler(int r) {
-            values[r] = SetIntervalContexts.getExact().numsToInterval(Math.E,Math.E);
+            values[r] = ic.euler();
         }
 
         @Override
@@ -168,11 +168,15 @@ public class IntervalEvaluator {
         }
     }
 
-    private static class GradientEvaluator extends AbstractExpressionVisitor{
+    static class GradientEvaluator extends AbstractExpressionVisitor{
+       final CodeList cl;
         final Gradient[] values;
         SetIntervalContext ic;
-        GradientEvaluator(CodeList cl) {
+        GradientEvaluator(CodeList cl, SetIntervalContext ic) {
+            this.cl = cl;
             values = new Gradient[cl.getNumExprs()];
+            this.ic = ic;
+            cl.acceptConstants(this);
         }
 
         @Override
@@ -180,8 +184,24 @@ public class IntervalEvaluator {
         }
 
         @Override
+        public void visitLit(int r, String numerator, String denominator) {
+            Rational rv = Rational.valueOf(numerator + "/" + denominator);
+            SetInterval v = ic.numsToInterval(rv, rv);
+            values[r] = Gradient.nums(v.inf(), v.sup());
+        }
+
+        @Override
+        public void visitLit(int r, String literal) {
+            Rational rv = Rational.valueOf(literal);
+            SetInterval v = ic.numsToInterval(rv, rv);
+            values[r] = Gradient.nums(v.inf(), v.sup());
+        }
+
+        @Override
         public void visitNum(int r, Number num) {
-            values[r] = Gradient.num(ExtendedRational.valueOf(num));
+            Rational rv = Rational.valueOf(num);
+            SetInterval v = ic.numsToInterval(rv, rv);
+            values[r] = Gradient.nums(v.inf(), v.sup());
         }
 
         @Override
@@ -191,12 +211,14 @@ public class IntervalEvaluator {
 
         @Override
         public void visitPi(int r) {
-            values[r] = Gradient.num(Math.PI);
+            SetInterval v = ic.pi();
+            values[r] = Gradient.nums(v.inf(), v.sup());
         }
 
         @Override
         public void visitEuler(int r) {
-            values[r] = Gradient.num(Math.E);
+            SetInterval v = ic.euler();
+            values[r] = Gradient.nums(v.inf(), v.sup());
         }
 
         @Override
@@ -225,6 +247,11 @@ public class IntervalEvaluator {
         }
 
         @Override
+        public void visitRecip(int r, int x) {
+            values[r] = values[x].recip();
+        }
+
+        @Override
         public void visitSqr(int r, int x) {
             values[r] = values[x].sqr();
         }
@@ -236,6 +263,9 @@ public class IntervalEvaluator {
 
         @Override
         public void visitPow(int r, int x, int y) {
+            if (!cl.getExpr(y).isConstant()) {
+                throw new UnsupportedOperationException();
+            }
             values[r] = values[x].pow(values[y]);
         }
 
@@ -264,16 +294,25 @@ public class IntervalEvaluator {
             values[r] = values[x].atan();
         }
 
+        @Override
+        public void visitRootn(int r, int x, int q) {
+            values[r] = values[x].rootn(q);
+        }
+
         void setContext(SetIntervalContext ic) {
             this.ic = ic;
         }
     }
 
-    private static class GradientMVEvaluator extends AbstractExpressionVisitor{
+    static class GradientMVEvaluator extends AbstractExpressionVisitor{
+        final CodeList cl;
         final GradientMV[] values;
         SetIntervalContext ic;
-        GradientMVEvaluator(CodeList cl) {
+        GradientMVEvaluator(CodeList cl, SetIntervalContext ic) {
+            this.cl = cl;
             values = new GradientMV[cl.getNumExprs()];
+            this.ic = ic;
+            cl.acceptConstants(this);
         }
 
         @Override
@@ -286,12 +325,31 @@ public class IntervalEvaluator {
         }
 
         @Override
+        public void visitLit(int r, String numerator, String denominator) {
+            Rational rv = Rational.valueOf(numerator + "/" + denominator);
+            SetInterval v = ic.numsToInterval(rv, rv);
+            values[r] = GradientMV.nums(v.inf(), v.sup());
+        }
+
+        @Override
+        public void visitLit(int r, String literal) {
+            Rational rv = Rational.valueOf(literal);
+            SetInterval v = ic.numsToInterval(rv, rv);
+            values[r] = GradientMV.nums(v.inf(), v.sup());
+        }
+
+        @Override
         public void visitNum(int r, Number num) {
-            values[r] = GradientMV.num(ExtendedRational.valueOf(num));
+            Rational rv = Rational.valueOf(num);
+            SetInterval v = ic.numsToInterval(rv, rv);
+            values[r] = GradientMV.nums(v.inf(), v.sup());
         }
 
         @Override
         public void visitPow(int r, int x, int y) {
+            if (!cl.getExpr(y).isConstant()) {
+                throw new UnsupportedOperationException();
+            }
             values[r] = values[x].pow(values[y]);
         }
 
@@ -302,12 +360,14 @@ public class IntervalEvaluator {
 
         @Override
         public void visitPi(int r) {
-            values[r] = GradientMV.num(Math.PI);
+            SetInterval v = ic.pi();
+            values[r] = GradientMV.nums(v.inf(), v.sup());
         }
 
         @Override
         public void visitEuler(int r) {
-            values[r] = GradientMV.num(Math.E);
+            SetInterval v = ic.euler();
+            values[r] = GradientMV.nums(v.inf(), v.sup());
         }
 
         @Override
@@ -336,6 +396,11 @@ public class IntervalEvaluator {
         }
 
         @Override
+        public void visitRecip(int r, int x) {
+            values[r] = values[x].recip();
+        }
+
+        @Override
         public void visitSqr(int r, int x) {
             values[r] = values[x].sqr();
         }
@@ -358,6 +423,11 @@ public class IntervalEvaluator {
         @Override
         public void visitAtan(int r, int x) {
             values[r] = values[x].atan();
+        }
+
+        @Override
+        public void visitRootn(int r, int x, int q) {
+            values[r] = values[x].rootn(q);
         }
 
         void setContext(SetIntervalContext ic) {

@@ -2,15 +2,16 @@ package ru.nsc.interval.globalopt.mvopt;
 
 import net.java.jinterval.expression.CodeList;
 import net.java.jinterval.expression.Expression;
+import net.java.jinterval.expression.OptimizationProblem;
 
 /**
  * Created by astronaut on 01/04/16.
  */
 public class Functions {
-    public static CodeList list = CodeList.create("tpac","T","uw", "d");
-    public static Expression[] expr;
-    public static Expression objectiveFunction;
-    public static void initFunctions(){
+    private static CodeList list = CodeList.create("tpac","T","uw", "d");
+    private static Expression[] expr;
+    private static Expression objectiveFunction;
+    private static void initFunctions(){
         expr = new Expression[15];
         expr[0] = (list.num(1.216 / 0.67668).mul(list.getInp(0).pow(list.num(1.0 / 3.0)))); //k
         expr[1] = (list.num(7).mul(expr[0]).sub(list.num(21.5))). //mu
@@ -69,5 +70,16 @@ public class Functions {
                         )
                 )).neg();
         /*objectiveFunction = (expr[15].sqr().add(expr[16].sqr())).neg();*/
+    }
+
+    public static OptimizationProblem createOptimizationProblem() {
+        initFunctions();
+        String[] box = new String[]{
+            "[50.0,170.0]", // tpac
+            "[254.0,299.0]", // T
+            "[2.3,9.0]", // uw
+            "[15.2,34.8]" // d
+        };
+        return new OptimizationProblem(objectiveFunction, box);
     }
 }

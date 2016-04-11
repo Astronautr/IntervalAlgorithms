@@ -1,5 +1,7 @@
 package ru.nsc.interval.globalopt.mvopt;
 
+import net.java.jinterval.expression.CodeList;
+import net.java.jinterval.expression.Expression;
 import net.java.jinterval.interval.set.SetInterval;
 import net.java.jinterval.interval.set.SetIntervalContext;
 import net.java.jinterval.interval.set.SetIntervalContexts;
@@ -22,11 +24,16 @@ public class IAOGO {
     private static ExtendedRational tolerance;
     private static SetInterval[] initBox;
     static ExtendedRational FIVE = ExtendedRational.valueOf(5);
+    static CodeList list;
+    static Expression objectiveFun;
+    static IntervalEvaluator.GradientEvaluator ev;
+    static IntervalEvaluator.GradientMVEvaluator evmv;
 
-    public IAOGO() {
+    public IAOGO(Expression objectiveFunction) {
         supMin = ExtendedRational.POSITIVE_INFINITY;
         rc =  ExtendedRationalContexts.mkNearest(BinaryValueSet.BINARY64);
-        Functions.initFunctions();
+        list = objectiveFunction.getCodeList();
+        objectiveFun = objectiveFunction;
     }
 
     static SetInterval scMul(SetInterval[] X, SetInterval[] Y) {
@@ -54,12 +61,21 @@ public class IAOGO {
             }
         }
         Gradient[] boxGradient = Gradient.init(box,ic);
-        Gradient objectiveFunction = IntervalEvaluator.evaluateGradient(ic,Functions.list,boxGradient,Functions.objectiveFunction)[0];
+//        Gradient objectiveFunction = IntervalEvaluator.evaluateGradient(ic,list,boxGradient,objectiveFun)[0];
+        System.arraycopy(boxGradient, 0, ev.values, 0, list.getNumInps());
+        list.acceptForward(ev);
+        Gradient objectiveFunction = ev.values[objectiveFun.getIndex()];
+
         SetInterval[] centralPoint = new SetInterval[box.length];
         for (int i = 0; i < box.length; i++) {
             centralPoint[i] = ic.numsToInterval(box[i].mid(), box[i].mid());
         }
-        Gradient objFuncCentralPointVal = IntervalEvaluator.evaluateGradient(ic,Functions.list,Gradient.init(centralPoint,ic),Functions.objectiveFunction)[0];
+//        Gradient objFuncCentralPointVal = IntervalEvaluator.evaluateGradient(ic,list,Gradient.init(centralPoint,ic),objectiveFun)[0];
+        Gradient[] centerGradient = Gradient.init(centralPoint,ic);
+        System.arraycopy(centerGradient, 0, ev.values, 0, list.getNumInps());
+        list.acceptForward(ev);
+        Gradient objFuncCentralPointVal = ev.values[objectiveFun.getIndex()];
+
         if(rc.sub(supMin,objFuncCentralPointVal.getX().sup()).ge(tolerance)){
             rmUseless(objFuncCentralPointVal.getX().sup());
             supMin = objFuncCentralPointVal.getX().sup();
@@ -71,7 +87,11 @@ public class IAOGO {
         //improving partial derivatives
         if (normBox.le(FIVE)) {
             GradientMV[] boxGradientMV = GradientMV.init(box, ic);
-            GradientMV objectiveFunctionMV = IntervalEvaluator.evaluateGradientMV(ic, Functions.list, boxGradientMV, Functions.objectiveFunction)[0];
+//            GradientMV objectiveFunctionMV = IntervalEvaluator.evaluateGradientMV(ic, list, boxGradientMV, objectiveFun)[0];
+            System.arraycopy(boxGradientMV, 0, evmv.values, 0, list.getNumInps());
+            list.acceptForward(evmv);
+            GradientMV objectiveFunctionMV = evmv.values[objectiveFun.getIndex()];
+
             objectiveFunction = objectiveFunction.intersection(objectiveFunctionMV);
         }
         SetInterval fMeanValue = ic.add(objFuncCentralPointVal.getX(),scMul(xBiasCentral,objectiveFunction.getDX()));
@@ -109,6 +129,10 @@ public class IAOGO {
         IAOGO.tolerance = tolerance;
         IAOGO.ic = ic;
         IAOGO.initBox = box;
+        Gradient.init(box, ic);
+        ev = new IntervalEvaluator.GradientEvaluator(objectiveFun.getCodeList(), ic);
+        GradientMV.init(box, ic);
+        evmv = new IntervalEvaluator.GradientMVEvaluator(objectiveFun.getCodeList(), ic);
         initElem(box, ExtendedRational.POSITIVE_INFINITY);
         int count = 1;
         while (wList.peek().getWid().ge(tolerance)) {
@@ -134,7 +158,7 @@ public class IAOGO {
             second[max] = (ic.numsToInterval(second[max].mid(),second[max].sup()));
             initElem(first, first[pMax].wid());
             initElem(second, second[pMax].wid());
-            System.out.println(wList.peek().getAssessment().doubleValue());
+//            System.out.println(wList.peek().getAssessment().doubleValue());
             count++;
         }
         System.out.println(count);

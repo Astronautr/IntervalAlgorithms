@@ -5,7 +5,6 @@ import net.java.jinterval.interval.set.SetIntervalContext;
 import net.java.jinterval.interval.set.SetIntervalContexts;
 import net.java.jinterval.rational.*;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 
@@ -379,6 +378,23 @@ public class Gradient {
         return result;
     }
 
+    public Gradient recip() {
+        Gradient result = new Gradient();
+        result.X = ic.recip(this.X);
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        for (int i = 0; i < dim; i++) {
+            result.dX[i] = ic.neg(ic.div(this.dX[i],ic.sqr(this.X)));
+            for (int j = i; j < dim; j++) {
+                result.ddX[i][j] =ic.sub(
+                    ic.mul(ic.numsToInterval(2,2),ic.div(ic.mul(this.dX[i],this.dX[j]),ic.pown(this.X,3))),
+                    ic.div(this.ddX[i][j],ic.sqr(this.X)));
+            }
+        }
+        result.hessianFill();
+        return result;
+    }
+
     public Gradient pow(Gradient Y) {
         Gradient result = new Gradient();
         result.X = ic.pow(this.X, Y.X);
@@ -537,6 +553,24 @@ public class Gradient {
                 result.ddX[i][j] = ic.div(ic.sub(ic.mul(this.ddX[i][j],ic.add(ic.numsToInterval(1,1),ic.sqr(this.X))),
                         ic.mul(ic.mul(ic.mul(ic.numsToInterval(2,2),this.X),this.dX[i]),this.dX[j])),
                         ic.sqr(ic.add(ic.numsToInterval(1,1),ic.sqr(this.X))));
+            }
+        }
+        result.hessianFill();
+        return result;
+    }
+
+    public Gradient rootn(int q) {
+        Gradient result = new Gradient();
+        SetInterval Y = ic.recip(ic.numsToInterval(q,q));
+        result.X = ic.pow(this.X, Y);
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        for (int i = 0; i < dim; i++) {
+            result.dX[i] = ic.mul(ic.mul(Y, ic.pow(X,ic.sub(Y, ic.numsToInterval(1,1)))),this.dX[i]);
+            for (int j = i; j < dim; j++) {
+                result.ddX[i][j] = ic.mul(ic.mul(Y,ic.pow(this.X,ic.sub(Y,ic.numsToInterval(2,2)))),
+                        ic.add(ic.mul(ic.mul(ic.sub(Y,ic.numsToInterval(1,1)),this.dX[i]),this.dX[j]),
+                                ic.mul(this.X,this.ddX[i][j])));
             }
         }
         result.hessianFill();
