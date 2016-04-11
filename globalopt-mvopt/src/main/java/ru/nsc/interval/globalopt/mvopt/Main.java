@@ -1,5 +1,7 @@
 package ru.nsc.interval.globalopt.mvopt;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import net.java.jinterval.expression.OptimizationProblem;
 import net.java.jinterval.expression.example.FireRisk;
 import net.java.jinterval.interval.set.*;
@@ -43,6 +45,53 @@ public class Main {
                 break;
         }
     }
+
+    private static void Help() {
+        System.out.println("Usage: [-p] problemfile tolerance");
+        System.out.println("       -p plain mode (faster but without guarantee");
+        System.exit(1);
+    }
+
+    public static void mainWithArgs(String[] args) {
+        SetIntervalContext ic = SetIntervalContexts.getDefault();
+        String problemFile = null;
+        Double tolerance = null;
+        for (String arg : args) {
+            if (arg.startsWith("-")) {
+                if (arg.equals("-p")) {
+                    ic = SetIntervalContexts.getPlain();
+                } else {
+                    Help();
+                }
+            } else if (problemFile == null) {
+                problemFile = arg;
+            } else if (tolerance == null) {
+                tolerance = new Double(arg);
+            } else {
+                Help();
+            }
+        }
+        if (tolerance == null) {
+            Help();
+        }
+        OptimizationProblem problem = null;
+        try {
+            problem = OptimizationProblem.load(Paths.get(problemFile));
+        } catch (IOException e) {
+            System.out.println("File " + problemFile + " not found");
+            Help();
+        }
+        SetInterval[] box = new SetInterval[problem.getNumInps()];
+        for (int i = 0; i < box.length; i++) {
+            box[i] = ic.textToInterval(problem.getInpRange(i));
+        }
+        IAOGO algorithm = new IAOGO(problem.getObjective());
+
+        long startTime = System.currentTimeMillis();
+        algorithm.start(box, ExtendedRational.valueOf(tolerance), ic);
+        long stopTime = System.currentTimeMillis();
+        System.out.println("tol=" + tolerance + " time=" + (stopTime - startTime) / 1E3 + "s");
+    }
 }
 /*
 num plain
@@ -68,4 +117,4 @@ lit accur
 -0.080214431476518500	[170.000000000000000000, 170.000000000000000000]	[299.000000000000000000, 299.000000000000000000]	[9.000000000000000000, 9.000000000000000000]	[34.800000000000004000, 34.800000000000004000]
 -0.080214431476518500	[170.000000000000000000, 170.000000000000000000]	[299.000000000000000000, 299.000000000000000000]	[9.000000000000000000, 9.000000000000000000]	[34.800000000000004000, 34.800000000000004000]
 tol=1.0E-9 time=300.758s
-*/
+ */
