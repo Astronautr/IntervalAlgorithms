@@ -22,6 +22,7 @@
         <module>globalopt-kenai</module>
         <module>globalopt-v1</module>
         <module>globalopt-v2</module>
+        <module>globalopt-mvopt</module>
     </modules>
     
     <dependencies>
