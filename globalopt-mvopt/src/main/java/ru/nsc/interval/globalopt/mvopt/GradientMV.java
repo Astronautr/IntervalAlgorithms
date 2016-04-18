@@ -407,6 +407,53 @@ public class GradientMV {
         return result;
     }
 
+    public GradientMV max(GradientMV Y) {
+        GradientMV result = new GradientMV();
+        result.xCentral = ic.max(this.xCentral, Y.xCentral);
+        result.dxCentral = new SetInterval[dim];
+        result.X = ic.max(this.X, Y.X);
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        if (this.xCentral.strictPrecedes(Y.xCentral)) {
+            for (int i = 0; i < dim; i++) {
+                result.dxCentral[i] = Y.dxCentral[i];
+            }
+        } else if (Y.xCentral.strictPrecedes(this.xCentral)) {
+            for (int i = 0; i < dim; i++) {
+                result.dxCentral[i] = this.dxCentral[i];
+            }
+        } else {
+            for (int i = 0; i < dim; i++) {
+                result.dxCentral[i] = ic.convexHull(this.dxCentral[i], Y.dxCentral[i]);
+            }
+        }
+        if (this.X.strictPrecedes(Y.X)) {
+            for (int i = 0; i < dim; i++) {
+                result.dX[i] = Y.dX[i];
+                for (int j = i; j < dim; j++) {
+                    result.ddX[i][j] = Y.ddX[i][j];
+                }
+            }
+        } else if (Y.X.strictPrecedes(this.X)) {
+            for (int i = 0; i < dim; i++) {
+                result.dX[i] = this.dX[i];
+                for (int j = i; j < dim; j++) {
+                    result.ddX[i][j] = this.ddX[i][j];
+                }
+            }
+        } else {
+            for (int i = 0; i < dim; i++) {
+                result.dX[i] = ic.convexHull(this.dX[i], Y.dX[i]);
+                for (int j = i; j < dim; j++) {
+                    result.ddX[i][j] = ic.entire();
+                }
+            }
+        }
+        result.hessianFill();
+        result.improving();
+        return result;
+    }
+
     public GradientMV rootn(int q) {
         GradientMV result = new GradientMV();
         SetInterval Y = ic.recip(ic.numsToInterval(q,q));

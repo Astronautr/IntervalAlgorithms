@@ -159,6 +159,11 @@ public class IntervalEvaluator {
         }
 
         @Override
+        public void visitMax(int r, int x, int y) {
+            values[r] = ic.max(values[x], values[y]);
+        }
+
+        @Override
         public void visitRootn(int r, int x, int q) {
             values[r] = ic.rootn(values[x], q);
         }
@@ -295,6 +300,11 @@ public class IntervalEvaluator {
         }
 
         @Override
+        public void visitMax(int r, int x, int y) {
+            values[r] = values[x].max(values[y]);
+        }
+        
+        @Override
         public void visitRootn(int r, int x, int q) {
             values[r] = values[x].rootn(q);
         }
@@ -425,6 +435,11 @@ public class IntervalEvaluator {
             values[r] = values[x].atan();
         }
 
+        @Override
+        public void visitMax(int r, int x, int y) {
+            values[r] = values[x].max(values[y]);
+        }
+        
         @Override
         public void visitRootn(int r, int x, int q) {
             values[r] = values[x].rootn(q);
