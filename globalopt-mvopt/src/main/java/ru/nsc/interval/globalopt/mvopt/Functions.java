@@ -12,7 +12,7 @@ public class Functions {
     private static Expression[] expr;
     private static Expression objectiveFunction;
     private static void initFunctions(){
-        expr = new Expression[15];
+        expr = new Expression[17];
         expr[0] = (list.num(1.216 / 0.67668).mul(list.getInp(0).pow(list.num(1.0 / 3.0)))); //k
         expr[1] = (list.num(7).mul(expr[0]).sub(list.num(21.5))). //mu
                 add((list.num(0.76).sub(list.num(0.04).mul(expr[0]))).mul(list.getInp(0))).
@@ -38,7 +38,7 @@ public class Functions {
         expr[12] = ((list.num(200).sub(list.getInp(3))).div(list.num(200).add(list.getInp(3)))).sqrt(); //D
         expr[13] = (expr[5].mul(expr[6].cos())).div(list.num(100).sub(expr[5].mul(expr[6].sin()))); //E
         expr[14] = (expr[8].sqr().sub(list.num(1))).sqrt();//F
-        objectiveFunction = /*(list.num(1.0/Math.PI). //Fh
+        expr[15] = (list.num(1.0/Math.PI). //Fh
                 mul(
                         (list.num(1).div(expr[12])).atan().
                                 add((expr[6].sin().div(expr[11])).
@@ -51,11 +51,12 @@ public class Functions {
                                 sub(
                                         (expr[7].sqr().add((expr[8].add(list.num(1))).sqr()).add(list.num(-2).
                                                 mul(expr[8].add(list.num(1).add(expr[7].mul(expr[8]).mul(expr[6].sin())))))
-                                        ).div(expr[9].mul(expr[10])).mul((expr[9].mul(expr[10]).div(expr[10])).atan())
+                                        ).div(expr[9].mul(expr[10])).mul((expr[9].mul(expr[12]).div(expr[10])).atan())
+//                                      ).div(expr[9].mul(expr[10])).mul((expr[9].mul(expr[10]).div(expr[10])).atan())
                                 )
                 )
-        );*/
-         (list.num(1.0 / Math.PI). //Fv
+        );
+        expr[16] = (list.num(1.0 / Math.PI). //Fv
                 mul(expr[13].neg().mul(expr[12].atan()).
                         add(expr[13].
                                 mul(expr[7].sqr().add((expr[8].add(list.num(1))).sqr()).add(list.num(-2).mul(expr[8]).
@@ -68,8 +69,8 @@ public class Functions {
                                         )
                                 )
                         )
-                )).neg();
-        /*objectiveFunction = (expr[15].sqr().add(expr[16].sqr())).neg();*/
+                ));
+        objectiveFunction = (expr[15].sqr().add(expr[16].sqr())).neg();
     }
 
     public static OptimizationProblem createOptimizationProblem() {

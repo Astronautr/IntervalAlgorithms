@@ -559,6 +559,37 @@ public class Gradient {
         return result;
     }
 
+    public Gradient max(Gradient Y) {
+        Gradient result = new Gradient();
+        result.X = ic.max(this.X, Y.X);
+        result.dX = new SetInterval[dim];
+        result.ddX = new SetInterval[dim][dim];
+        if (this.X.strictPrecedes(Y.X)) {
+            for (int i = 0; i < dim; i++) {
+                result.dX[i] = Y.dX[i];
+                for (int j = i; j < dim; j++) {
+                    result.ddX[i][j] = Y.ddX[i][j];
+                }
+            }
+        } else if (Y.X.strictPrecedes(this.X)) {
+            for (int i = 0; i < dim; i++) {
+                result.dX[i] = this.dX[i];
+                for (int j = i; j < dim; j++) {
+                    result.ddX[i][j] = this.ddX[i][j];
+                }
+            }
+        } else {
+            for (int i = 0; i < dim; i++) {
+                result.dX[i] = ic.convexHull(this.dX[i], Y.dX[i]);
+                for (int j = i; j < dim; j++) {
+                    result.ddX[i][j] = ic.entire();
+                }
+            }
+        }
+        result.hessianFill();
+        return result;
+    }
+
     public Gradient rootn(int q) {
         Gradient result = new Gradient();
         SetInterval Y = ic.recip(ic.numsToInterval(q,q));
